@@ -552,30 +552,6 @@ end
 
 	@returns A function that will return true iff the condition is passed
 **--]]
-do
-	local callbackArray = t.array(t.callback)
-	--[[**
-		creates a union type
-
-		@param checks The checks to union
-
-		@returns A function that will return true iff the condition is passed
-	**--]]
-	function t.unionList(checks)
-		assert(callbackArray(checks))
-
-		return function(value)
-			for _, check in ipairs(checks) do
-				if check(value) then
-					return true
-				end
-			end
-
-			return false, "bad type for union"
-		end
-	end
-end
-
 function t.literal(...)
 	local size = select("#", ...)
 	if size == 1 then
@@ -1187,53 +1163,6 @@ do
 			for key in pairs(value) do
 				if not checkTable[key] then
 					return false, string.format("[interface] unexpected field %q", tostring(key))
-				end
-			end
-
-			return true
-		end
-	end
-end
-
-do
-	local checkChildren = t.map(t.string, t.callback)
-
-	--[[**
-		Takes a table where keys are child names and values are functions to check the children against.
-		Pass an instance tree into the function.
-		If at least one child passes each check, the overall check passes.
-
-		Warning! If you pass in a tree with more than one child of the same name, this function will always return false
-
-		@param checkTable The table to check against
-
-		@returns A function that checks an instance tree
-	**--]]
-	function t.children(checkTable)
-		assert(checkChildren(checkTable))
-
-		return function(value)
-			local instanceSuccess, instanceErrMsg = t.Instance(value)
-			if not instanceSuccess then
-				return false, instanceErrMsg or ""
-			end
-
-			local childrenByName = {}
-			for _, child in ipairs(value:GetChildren()) do
-				local name = child.Name
-				if checkTable[name] then
-					if childrenByName[name] then
-						return false, string.format("Cannot process multiple children with the same name %q", name)
-					end
-
-					childrenByName[name] = child
-				end
-			end
-
-			for name, check in pairs(checkTable) do
-				local success, errMsg = check(childrenByName[name])
-				if not success then
-					return false, string.format("[%s.%s] %s", value:GetFullName(), name, errMsg or "")
 				end
 			end
 
