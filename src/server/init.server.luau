@@ -1,0 +1,5 @@
+local Players = game:GetService("Players")
+local ServerStorage = game:GetService("ServerStorage")
+local PlayerService = require(ServerStorage.Services.PlayerService)
+Players.PlayerAdded:Connect(PlayerService.Load)
+Players.PlayerRemoving:Connect(PlayerService.Unload)

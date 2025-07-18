@@ -1,0 +1,43 @@
+{
+  "name": "SimpleRoFramework",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared/ReplicatedStorage"
+      }
+    },
+
+    "ServerStorage": {
+      "Services": {
+        "$path": "src/shared/ServerStorage"
+      }
+    },
+
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      }
+    },
+
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Handler": {
+          "$path": "src/client/PlayerScripts"
+        }
+      },
+      "StarterCharacterScripts": {
+        "Handler": {
+          "$path": "src/client/CharacterScripts"
+        }
+      }
+    },
+
+    "SoundService": {
+      "$properties": {
+        "RespectFilteringEnabled": true
+      }
+    }
+  }
+}
