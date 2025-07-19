@@ -52,6 +52,7 @@ function Module.placeCharacter(placedCharacterName: string, position: Vector3, b
 		return
 	end
 	local clonedCharacter = character:Clone() :: Model
+	clonedCharacter.PrimaryPart.Anchored = true
 	clonedCharacter:PivotTo(CFrame.new(position))
 	clonedCharacter.Parent = baseCharacters
 

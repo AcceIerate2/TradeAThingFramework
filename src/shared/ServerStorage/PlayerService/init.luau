@@ -3,6 +3,7 @@ local getPlayerBase = require(ReplicatedStorage.Shared.Gameplay.Utility.getPlaye
 local BaseService = require(script.Parent.BaseService)
 local DataStoreService = require(script.Parent.DataStoreService)
 local DevelopmentTerminal = require(script.Parent.DevelopmentTerminal)
+local ToolService = require(script.Parent.ToolService)
 local characterHandler = require(script.characterHandler)
 local createPlayerInstances = require(script.createPlayerInstances)
 
@@ -44,6 +45,12 @@ function Module.Load(player: Player)
 
 		player:SetAttribute("baseNumber", tonumber(string.split(availableBase.Name, "_")[2]))
 		BaseService.loadBase(player, availableBase)
+
+		player:SetAttribute("progressBar", player:GetAttribute("progressBar") :: number + 25)
+
+		ToolService.loadPlayerTools(player)
+
+		player:SetAttribute("progressBar", player:GetAttribute("progressBar") :: number + 25)
 	end
 end
 
