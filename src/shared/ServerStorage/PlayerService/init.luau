@@ -1,3 +1,6 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local getPlayerBase = require(ReplicatedStorage.Shared.Gameplay.Utility.getPlayerBase)
+local BaseService = require(script.Parent.BaseService)
 local DataStoreService = require(script.Parent.DataStoreService)
 local DevelopmentTerminal = require(script.Parent.DevelopmentTerminal)
 local characterHandler = require(script.characterHandler)
@@ -33,6 +36,14 @@ function Module.Load(player: Player)
 		player:SetAttribute("progressBar", player:GetAttribute("progressBar") :: number + 25)
 
 		DevelopmentTerminal(player)
+
+		local availableBase = BaseService.getAvailableBase()
+		if not availableBase then
+			player:Kick("Could not get an available base for you. Please rejoin.")
+		end
+
+		player:SetAttribute("baseNumber", tonumber(string.split(availableBase.Name, "_")[2]))
+		BaseService.loadBase(player, availableBase)
 	end
 end
 
@@ -40,6 +51,7 @@ function Module.Unload(player: Player)
 	if not player then
 		error("Player arg was not passed")
 	end
+	BaseService.resetBase(getPlayerBase(player))
 	local cannotSave = player:HasTag("Unsavable")
 	if cannotSave then
 		return

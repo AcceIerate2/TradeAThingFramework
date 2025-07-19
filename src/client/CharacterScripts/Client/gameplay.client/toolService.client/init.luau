@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local getPlayerBase = require(ReplicatedStorage.Shared.Gameplay.Utility.getPlayerBase)
 local FireEvent = require(ReplicatedStorage.Shared.Utility.FireEvent)
 
 local hitbox = Instance.new("Part")
@@ -87,6 +88,13 @@ return function(player: Player)
 				disconnectTriggeredConnection()
 				disconnectMouseConnection()
 				hitbox.Transparency = 0.75
+
+				local playerBase = getPlayerBase(player)
+				local base_PLATE = playerBase:FindFirstChild("base") or playerBase:WaitForChild("base", 3)
+				if not base_PLATE then
+					error("Could not get base_PLATE!")
+				end
+
 				_mouseConnection = RunService.RenderStepped:Connect(function(_deltaTime: number)
 					local mouseX, mouseY = mouse.X, mouse.Y
 					local unitRay = workspace.CurrentCamera:ScreenPointToRay(mouseX, mouseY)
@@ -97,16 +105,16 @@ return function(player: Player)
 					raycastParams.FilterDescendantsInstances = { getPlayerCharacters(), hitbox }
 
 					local raycastResult = workspace:Raycast(unitRay.Origin, unitRay.Direction * 100, raycastParams)
-					if not raycastResult or raycastResult.Instance ~= workspace.Baseplate then
+					if not raycastResult or raycastResult.Instance ~= base_PLATE then
 						return
 					end
 
 					local hitPos = raycastResult.Position
-					local yPos = workspace.Baseplate.Position.Y + workspace.Baseplate.Size.Y / 2 + hitbox.Size.Y / 2
+					local yPos = base_PLATE.Position.Y + base_PLATE.Size.Y / 2 + hitbox.Size.Y / 2
 					hitbox.Position = Vector3.new(hitPos.X, yPos, hitPos.Z)
 				end)
 				_toolTriggeredConnection = newInstance.Activated:Connect(function()
-					FireEvent.fireRemoteEvent("placeCharacter", hitbox.Position)
+					FireEvent.fireRemoteEvent("placeCharacter", newInstance.Name, hitbox.Position)
 				end)
 			end)
 			_toolUnEquippedConnection = newInstance.Unequipped:Connect(function()

@@ -15,11 +15,15 @@ function Module.Insert(Json: string, IndexName: string | number | nil, DataToBeI
 	return nil
 end
 
-function Module.Remove(Json: string, IndexToRemove: number | nil, ValueToRemove: any? | nil): string | nil
+function Module.Remove(Json: string, IndexToRemove: number | string | nil, ValueToRemove: any? | nil): string | nil
 	local Decoded = HttpService:JSONDecode(Json)
 	if TypeCheck.table(Decoded) then
 		if IndexToRemove then
-			table.remove(Decoded, IndexToRemove)
+			if TypeCheck.number(IndexToRemove) then
+				table.remove(Decoded, tonumber(IndexToRemove))
+			elseif TypeCheck.string(IndexToRemove) then
+				Decoded[IndexToRemove] = nil
+			end
 		elseif ValueToRemove then
 			local FoundIndex = nil :: number | nil
 			for _Index, Value in ipairs(Decoded) do

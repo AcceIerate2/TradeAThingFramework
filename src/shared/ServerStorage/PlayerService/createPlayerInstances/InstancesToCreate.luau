@@ -22,6 +22,15 @@ return {
 		["Tags"] = {
 			"Savable",
 		},
+		["DefaultValue"] = '["Default"]',
+		["Children"] = {},
+	},
+
+	["placedCharacters"] = {
+		["Class"] = "StringValue",
+		["Tags"] = {
+			"Savable",
+		},
 		["DefaultValue"] = "[]",
 		["Children"] = {},
 	},

@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local JSONHandler = require(ReplicatedStorage.Shared.Utility.JSONHandler)
+local TypeCheck = require(ReplicatedStorage.Shared.Utility.TypeCheck)
 local Module = {}
 
 function Module.removeFromInventory(player: Player, items: { string })
@@ -55,6 +56,23 @@ function Module.addToInventory(player: Player, items: { string })
 			error("Tool '" .. itemName .. "' not found in ReplicatedStorage.Tools.")
 		end
 	end
+end
+
+function Module.ownsTool(player: Player, toolName: string)
+	if not player or not player:IsA("Player") then
+		error("Player is nil or not part of player class!")
+	end
+
+	if not TypeCheck.string(toolName) then
+		error("toolName is not a valid string!")
+	end
+
+	local playerInventory = player:FindFirstChild("Inventory") or player:WaitForChild("Inventory", 3)
+	if not playerInventory then
+		error("Player inventory not found.")
+	end
+
+	return JSONHandler.StringExists(playerInventory.Value, toolName) :: boolean
 end
 
 return Module
