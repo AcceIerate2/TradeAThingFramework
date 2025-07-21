@@ -1,7 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local getPlayerBase = require(ReplicatedStorage.Shared.Gameplay.Utility.getPlayerBase)
 local BaseService = require(script.Parent.BaseService)
-local BoosterService = require(script.Parent.BoosterService)
 local DataStoreService = require(script.Parent.DataStoreService)
 local DevelopmentTerminal = require(script.Parent.DevelopmentTerminal)
 local ToolService = require(script.Parent.ToolService)
