@@ -31,7 +31,7 @@ return {
 		["Tags"] = {
 			"Savable",
 		},
-		["DefaultValue"] = '["Default"]',
+		["DefaultValue"] = '["Default", "Default"]',
 		["Children"] = {},
 	},
 

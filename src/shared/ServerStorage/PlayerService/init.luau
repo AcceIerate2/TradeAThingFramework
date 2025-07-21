@@ -1,6 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local getPlayerBase = require(ReplicatedStorage.Shared.Gameplay.Utility.getPlayerBase)
 local BaseService = require(script.Parent.BaseService)
+local BoosterService = require(script.Parent.BoosterService)
 local DataStoreService = require(script.Parent.DataStoreService)
 local DevelopmentTerminal = require(script.Parent.DevelopmentTerminal)
 local ToolService = require(script.Parent.ToolService)
@@ -44,10 +45,7 @@ function Module.Load(player: Player)
 
 		ToolService.loadPlayerTools(player)
 
-		--[[ 
-			* Work in progress *
-			-> BoosterService.load(player)
-		]]
+		BoosterService.load(player)
 
 		maxCashTracker(player)
 
@@ -71,6 +69,7 @@ function Module.Unload(player: Player)
 		error("Player arg was not passed")
 	end
 	BaseService.resetBase(getPlayerBase(player))
+	BoosterService.disconnectBoosters(player)
 	local cannotSave = player:HasTag("Unsavable")
 	if cannotSave then
 		return

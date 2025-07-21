@@ -1,15 +1,41 @@
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local countdowns = require(script.countdowns)
 local getPlayerBase = require(ReplicatedStorage.Shared.Gameplay.Utility.getPlayerBase)
 local AnchorHandler = require(ReplicatedStorage.Shared.Utility.AnchorHandler)
 local JSONHandler = require(ReplicatedStorage.Shared.Utility.JSONHandler)
+local TypeCheck = require(ReplicatedStorage.Shared.Utility.TypeCheck)
 local stringToVector3 = require(ReplicatedStorage.Shared.Utility.stringToVector3)
 local vector3ToString = require(ReplicatedStorage.Shared.Utility.vector3ToString)
 local BoosterFolder = ReplicatedStorage:FindFirstChild("Boosters") or ReplicatedStorage:WaitForChild("Boosters", 3)
 
+type boosterData = {
+	name: string,
+	secondsLeft: number,
+	id: string,
+}
+
 local Module = {}
 
-function Module.placeBooster(player: Player, boosterName: string, position: Vector3)
+function Module.disconnectBoosters(player: Player)
+	local placedBoosters = player:FindFirstChild("placedBoosters") or player:WaitForChild("placedBoosters", 3)
+	if not placedBoosters then
+		error("Could not get placedBoosters under Player: " .. player.Name .. "!")
+	end
+
+	local decoded = HttpService:JSONDecode(placedBoosters.Value)
+
+	for _index: number, boosterData: boosterData in pairs(decoded) do
+		local RBXScriptConnection = countdowns[`{boosterData.name}_{boosterData.id}`]
+		if RBXScriptConnection and TypeCheck.RBXScriptConnection(RBXScriptConnection) then
+			RBXScriptConnection:Disconnect()
+			RBXScriptConnection = nil
+		end
+	end
+end
+
+function Module.placeBooster(player: Player, boosterName: string, position: Vector3, data: {} | nil)
 	local placedBoosters = player:FindFirstChild("placedBoosters") or player:WaitForChild("placedBoosters", 3)
 	if not placedBoosters then
 		error("Could not get placedBoosters under Player: " .. player.Name .. "!")
@@ -20,15 +46,57 @@ function Module.placeBooster(player: Player, boosterName: string, position: Vect
 		error(`{boosterName} does not exist under {BoosterFolder.Name}!`)
 	end
 
-	placedBoosters.Value = JSONHandler.Insert(placedBoosters.Value, vector3ToString(position), { boosterName })
+	local ownsBoosterAlready: boolean = TypeCheck.table(data)
 
 	local newBooster = booster:Clone() :: Model
+
+	local id = data and data["id"] or HttpService:GenerateGUID(false)
+	newBooster:SetAttribute("Identifier", id)
+
+	if not ownsBoosterAlready then
+		placedBoosters.Value = JSONHandler.Insert(
+			placedBoosters.Value,
+			vector3ToString(position),
+			{ ["name"] = boosterName, ["secondsLeft"] = newBooster:GetAttribute("Duration"), ["id"] = id }
+		)
+	else
+		if data and data["secondsLeft"] then
+			newBooster:SetAttribute("Duration", data["secondsLeft"])
+		end
+	end
+
 	AnchorHandler(newBooster, true)
 	newBooster:PivotTo(CFrame.new(position))
 	newBooster.Parent = getPlayerBase(player):FindFirstChild("placedBoosters")
 
-	local duration = newBooster:GetAttribute("Duration") :: number
 	local boosterType = newBooster:GetAttribute("Type") :: string
+
+	local elapsed = 0
+	countdowns[`{boosterName}_{id}`] = RunService.Heartbeat:Connect(function(deltaTime)
+		elapsed += deltaTime
+
+		-- a second has passed
+		if elapsed >= 1 then
+			elapsed = 0
+			newBooster:SetAttribute("Duration", newBooster:GetAttribute("Duration") - 1)
+
+			placedBoosters.Value = JSONHandler.Insert(
+				placedBoosters.Value,
+				vector3ToString(position),
+				{ ["name"] = boosterName, ["secondsLeft"] = newBooster:GetAttribute("Duration"), ["id"] = id }
+			)
+
+			if newBooster:GetAttribute("Duration") < 1 then
+				newBooster:Destroy()
+
+				countdowns[`{boosterName}_{id}`]:Disconnect()
+				countdowns[`{boosterName}_{id}`] = nil
+
+				placedBoosters.Value = JSONHandler.Remove(placedBoosters.Value, vector3ToString(position), nil)
+				return
+			end
+		end
+	end)
 end
 
 -- Work in progress
@@ -39,8 +107,8 @@ function Module.load(player: Player)
 	end
 
 	local decoded = HttpService:JSONDecode(placedBoosters.Value)
-	for position: string, boosterName: string in pairs(decoded) do
-		Module.placeBooster(player, boosterName, stringToVector3(position))
+	for position: string, data: boosterData in pairs(decoded) do
+		Module.placeBooster(player, data.name, stringToVector3(position), data)
 	end
 end
 

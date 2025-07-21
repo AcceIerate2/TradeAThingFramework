@@ -58,6 +58,7 @@ function Module.loadPlayerTools(player: Player)
 		if not tool then
 			continue
 		end
+		print(tool)
 		local clonedTool = tool:Clone() :: Tool
 		clonedTool.Parent = player.Backpack
 	end
