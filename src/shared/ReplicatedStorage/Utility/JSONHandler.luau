@@ -22,9 +22,6 @@ function Module.Remove(Json: string, IndexToRemove: number | string | nil, Value
 			if TypeCheck.number(IndexToRemove) then
 				table.remove(Decoded, tonumber(IndexToRemove))
 			elseif TypeCheck.string(IndexToRemove) then
-				print(IndexToRemove, TypeCheck.string(IndexToRemove))
-				print(Decoded[IndexToRemove], "HSAUIDHAUI")
-				print(Decoded)
 				Decoded[IndexToRemove] = nil
 			end
 		elseif ValueToRemove then

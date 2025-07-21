@@ -1,6 +1,7 @@
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local BoosterService = require(script.Parent.BoosterService)
 local JSONHandler = require(ReplicatedStorage.Shared.Utility.JSONHandler)
 local InventoryService = require(script.Parent.InventoryService)
 local placedCharacterService = require(script.Parent.placedCharacterService)
@@ -10,7 +11,7 @@ local eventListener = require(ReplicatedStorage.Shared.Utility.eventListener)
 local Module = {}
 
 function Module.listenToClients()
-	eventListener.listenToRemoteEvent("placeCharacter", function(player: Player, toolName: string, position: Vector3)
+	eventListener.listenToRemoteEvent("placeItem", function(player: Player, toolName: string, position: Vector3)
 		local validString = TypeCheck.string(toolName)
 		if not validString then
 			return
@@ -26,8 +27,6 @@ function Module.listenToClients()
 			error(`{player.Name} does not own tool: {toolName}.`)
 		end
 
-		placedCharacterService.add(player, toolName, position)
-
 		local playerCharacter = player.Character
 		if not playerCharacter then
 			return
@@ -40,6 +39,13 @@ function Module.listenToClients()
 				Inventory.Value = JSONHandler.Remove(Inventory.Value, nil, tool.Name)
 			end
 			tool:Destroy()
+		end
+
+		local toolType = tool:GetAttribute("ToolType")
+		if toolType == "Character" then
+			placedCharacterService.add(player, toolName, position)
+		elseif toolType == "Booster" then
+			BoosterService.placeBooster(player, toolName, position)
 		end
 	end)
 end

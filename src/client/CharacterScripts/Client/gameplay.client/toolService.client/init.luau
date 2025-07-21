@@ -1,41 +1,18 @@
-local Players = game:GetService("Players")
+local hitbox = require(script.toolFunctions.toolPlacer.hitbox) :: BasePart
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local highlightDestroyer = require(script.Utility.highlightDestroyer)
+local plotExpander = require(script.toolFunctions.plotExpander)
+local toolPlacer = require(script.toolFunctions.toolPlacer)
 local getPlayerBase = require(ReplicatedStorage.Shared.Gameplay.Utility.getPlayerBase)
 local FireEvent = require(ReplicatedStorage.Shared.Utility.FireEvent)
-
-local hitbox = Instance.new("Part")
-hitbox.TopSurface = Enum.SurfaceType.Smooth
-hitbox.Material = Enum.Material.Neon
-hitbox.Anchored = true
-hitbox.Size = Vector3.new(4, 0.1, 4)
-hitbox.Transparency = 0.75
-hitbox.Color = Color3.fromRGB(0, 255, 0)
-hitbox.CanCollide = false
-hitbox.Parent = workspace
 
 local _childAddedConnection: RBXScriptConnection | nil
 local _toolEquippedConnection: RBXScriptConnection | nil
 local _toolUnEquippedConnection: RBXScriptConnection | nil
 local _toolTriggeredConnection: RBXScriptConnection | nil
 local _mouseConnection: RBXScriptConnection | nil
-
-local function isXZInside(base_PLATE: BasePart): boolean
-	local hitboxCFrame, hitboxSize = hitbox.CFrame, hitbox.Size
-	local baseCFrame, baseSize = base_PLATE.CFrame, base_PLATE.Size
-
-	local hitboxMinX = hitboxCFrame.Position.X - (hitboxSize.X / 2)
-	local hitboxMaxX = hitboxCFrame.Position.X + (hitboxSize.X / 2)
-	local hitboxMinZ = hitboxCFrame.Position.Z - (hitboxSize.Z / 2)
-	local hitboxMaxZ = hitboxCFrame.Position.Z + (hitboxSize.Z / 2)
-
-	local baseMinX = baseCFrame.Position.X - (baseSize.X / 2)
-	local baseMaxX = baseCFrame.Position.X + (baseSize.X / 2)
-	local baseMinZ = baseCFrame.Position.Z - (baseSize.Z / 2)
-	local baseMaxZ = baseCFrame.Position.Z + (baseSize.Z / 2)
-
-	return (hitboxMinX >= baseMinX and hitboxMaxX <= baseMaxX) and (hitboxMinZ >= baseMinZ and hitboxMaxZ <= baseMaxZ)
-end
 
 local function disconnectTriggeredConnection()
 	if _toolTriggeredConnection then
@@ -45,6 +22,7 @@ local function disconnectTriggeredConnection()
 end
 
 local function disconnectMouseConnection()
+	highlightDestroyer()
 	hitbox.Transparency = 1
 	if _mouseConnection then
 		_mouseConnection:Disconnect()
@@ -73,17 +51,6 @@ local function disconnectChildAddedConnection()
 	end
 end
 
-local function getPlayerCharacters(): { Model }
-	local tableToReturn = {} :: { Model }
-	for _index: number, player in pairs(Players:GetPlayers()) do
-		if not player.Character then
-			continue
-		end
-		table.insert(tableToReturn, player.Character)
-	end
-	return tableToReturn
-end
-
 return function(player: Player)
 	disconnectChildAddedConnection()
 
@@ -106,6 +73,15 @@ return function(player: Player)
 				disconnectMouseConnection()
 				hitbox.Transparency = 0.75
 
+				local ToolType = newInstance:GetAttribute("ToolType")
+				local functionToCall = toolPlacer
+				local remoteNameToFire = "placeItem"
+
+				if ToolType == "Plot Expander" then
+					functionToCall = plotExpander
+					remoteNameToFire = "expandPlot"
+				end
+
 				local playerBase = getPlayerBase(player)
 				local base_PLATE = playerBase:FindFirstChild("base") or playerBase:WaitForChild("base", 3)
 				if not base_PLATE then
@@ -113,41 +89,10 @@ return function(player: Player)
 				end
 
 				_mouseConnection = RunService.RenderStepped:Connect(function(_deltaTime: number)
-					local mouseX, mouseY = mouse.X, mouse.Y
-					local unitRay = workspace.CurrentCamera:ScreenPointToRay(mouseX, mouseY)
-
-					local raycastParams = RaycastParams.new()
-					raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-					raycastParams.RespectCanCollide = true
-					raycastParams.FilterDescendantsInstances = { getPlayerCharacters(), hitbox }
-
-					local raycastResult = workspace:Raycast(unitRay.Origin, unitRay.Direction * 100, raycastParams)
-					if not raycastResult or raycastResult.Instance ~= base_PLATE then
-						return
-					end
-
-					local hitPos = raycastResult.Position
-					local yPos = base_PLATE.Position.Y + base_PLATE.Size.Y / 2 + hitbox.Size.Y / 2
-					hitbox.Position = Vector3.new(hitPos.X, yPos, hitPos.Z)
-
-					local blocked = false
-					local partsInHitbox = workspace:GetPartsInPart(hitbox)
-					for _index: number, otherPart in pairs(partsInHitbox) do
-						if otherPart == base_PLATE then
-							continue
-						end
-						blocked = true
-						break
-					end
-
-					if not isXZInside(base_PLATE) then
-						blocked = true
-					end
-
-					if blocked then
-						hitbox.Color = Color3.fromRGB(255, 0, 0)
+					if ToolType == "Plot Expander" then
+						functionToCall(mouse, playerBase)
 					else
-						hitbox.Color = Color3.fromRGB(0, 255, 0)
+						functionToCall(mouse, base_PLATE)
 					end
 				end)
 				_toolTriggeredConnection = newInstance.Activated:Connect(function()
@@ -155,7 +100,23 @@ return function(player: Player)
 						warn("Can't place here!")
 						return
 					end
-					FireEvent.fireRemoteEvent("placeCharacter", newInstance.Name, hitbox.Position)
+					local args = {}
+					if remoteNameToFire == "placeItem" then
+						args = {
+							newInstance.Name,
+							hitbox.Position,
+						}
+					elseif remoteNameToFire == "expandPlot" then
+						local mouseTarget = mouse.Target
+						local targetParent = mouseTarget.Parent
+						if targetParent.Parent.Parent ~= playerBase.Land then
+							return
+						end
+						args = {
+							targetParent.Name,
+						}
+					end
+					FireEvent.fireRemoteEvent(remoteNameToFire, table.unpack(args))
 				end)
 			end)
 			_toolUnEquippedConnection = newInstance.Unequipped:Connect(function()

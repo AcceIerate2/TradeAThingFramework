@@ -17,6 +17,15 @@ return {
 		},
 	},
 
+	["MaxCash"] = {
+		["Class"] = "NumberValue",
+		["Tags"] = {
+			"Savable",
+		},
+		["DefaultValue"] = 1,
+		["Children"] = {},
+	},
+
 	["Inventory"] = {
 		["Class"] = "StringValue",
 		["Tags"] = {
@@ -27,6 +36,24 @@ return {
 	},
 
 	["placedCharacters"] = {
+		["Class"] = "StringValue",
+		["Tags"] = {
+			"Savable",
+		},
+		["DefaultValue"] = "[]",
+		["Children"] = {},
+	},
+
+	["placedBoosters"] = {
+		["Class"] = "StringValue",
+		["Tags"] = {
+			"Savable",
+		},
+		["DefaultValue"] = "[]",
+		["Children"] = {},
+	},
+
+	["UnlockedLand"] = {
 		["Class"] = "StringValue",
 		["Tags"] = {
 			"Savable",

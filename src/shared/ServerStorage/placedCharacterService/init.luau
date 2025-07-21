@@ -1,14 +1,81 @@
 local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local getPlayerBase = require(ReplicatedStorage.Shared.Gameplay.Utility.getPlayerBase)
+local CollisionHandler = require(ReplicatedStorage.Shared.Utility.CollisionHandler)
 local InstanceCreator = require(ReplicatedStorage.Shared.Utility.InstanceCreator)
 local JSONHandler = require(ReplicatedStorage.Shared.Utility.JSONHandler)
+local TypeCheck = require(ReplicatedStorage.Shared.Utility.TypeCheck)
+local partOfCharacter = require(ReplicatedStorage.Shared.Utility.partOfCharacter)
 local stringToVector3 = require(ReplicatedStorage.Shared.Utility.stringToVector3)
 local vector3ToString = require(ReplicatedStorage.Shared.Utility.vector3ToString)
 
 local ToolFolder = ReplicatedStorage.Tools
 
 local Module = {}
+
+function Module.generateIncome(character: Model, owner: Player)
+	local CashPerSecond = character:GetAttribute("CashPerSecond")
+	task.spawn(function()
+		character:SetAttribute("CashGenerated", 0)
+		while character and owner do
+			character:SetAttribute("CashGenerated", character:GetAttribute("CashGenerated") + CashPerSecond)
+			task.wait(1)
+		end
+	end)
+end
+
+function Module.setHitbox(character: Model, owner: Player)
+	local extentSize = character:GetExtentsSize()
+	local hitbox = InstanceCreator("Part", "cashCollector", character) :: Part
+	hitbox.CanCollide = false
+	hitbox.CanQuery = false
+	hitbox.Transparency = 1
+	hitbox.Massless = true
+	hitbox.CastShadow = false
+
+	hitbox.Size = extentSize
+	hitbox.PivotOffset = CFrame.new(0, -extentSize.Y / 2, 0)
+	hitbox:PivotTo(character:GetPivot())
+
+	local newWeld = InstanceCreator("WeldConstraint", "WeldConstraint", hitbox)
+	newWeld.Part0 = hitbox
+	newWeld.Part1 = character.PrimaryPart
+	newWeld.Enabled = true
+
+	local debounce = false
+	hitbox.Touched:Connect(function(otherPart)
+		if debounce then
+			return
+		end
+
+		debounce = true
+		task.delay(1, function()
+			debounce = false
+		end)
+
+		local playerCharacter = partOfCharacter(otherPart) :: Model
+		if not playerCharacter then
+			return
+		end
+		local player = Players:GetPlayerFromCharacter(playerCharacter)
+		if player ~= owner then
+			return
+		end
+
+		local cashGenerated = character:GetAttribute("CashGenerated")
+		local isANumber = TypeCheck.number(cashGenerated)
+		if not isANumber then
+			error("CashGenerated attribute is nil or not a number!")
+		end
+
+		local leaderstats = owner:FindFirstChild("leaderstats")
+		local playerCash = leaderstats:FindFirstChild("Cash")
+		playerCash.Value += cashGenerated
+
+		character:SetAttribute("CashGenerated", 0)
+	end)
+end
 
 function Module.replaceCharacterWithTool(player: Player, characterModel: Model)
 	if not player or not characterModel then
@@ -52,6 +119,7 @@ function Module.placeCharacter(placedCharacterName: string, position: Vector3, b
 		return
 	end
 	local clonedCharacter = character:Clone() :: Model
+	CollisionHandler.SetInstanceOrGroup(clonedCharacter, "Characters")
 	clonedCharacter.PrimaryPart.Anchored = true
 	clonedCharacter:PivotTo(CFrame.new(position))
 	clonedCharacter.Parent = baseCharacters
@@ -60,6 +128,8 @@ function Module.placeCharacter(placedCharacterName: string, position: Vector3, b
 
 	local baseOwner = base.Owner.Value
 
+	Module.generateIncome(clonedCharacter, baseOwner)
+	Module.setHitbox(clonedCharacter, baseOwner)
 	Module.setupCharacter(baseOwner, clonedCharacter)
 end
 

@@ -8,7 +8,7 @@ local SafeFunctionCaller = require(ReplicatedStorage.Shared.Utility.SafeFunction
 local TypeCheck = require(ReplicatedStorage.Shared.Utility.TypeCheck)
 
 -- DataStore
-local DataStore = DataStoreService:GetDataStore("UserData_Development_3")
+local DataStore = DataStoreService:GetDataStore("UserData_Development_6")
 
 -- Essential DataStore related Modules
 local PlayerInstances = require(script.PlayerInstances)
