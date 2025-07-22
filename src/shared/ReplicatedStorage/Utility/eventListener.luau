@@ -35,4 +35,25 @@ function Module.listenToBindableEvent(name: string, callback: (...any) -> ...any
 	return bindableEvent.Event:Connect(callback)
 end
 
+function Module.listenToRemoteFunction(remoteName: string, callback: (...any) -> ...any): nil
+	if not remoteName or not callback then
+		error(`remoteFunction Name or callback was not passed`)
+	end
+
+	local remoteFunction = Events.RemoteFunctions:FindFirstChild(remoteName)
+	if not remoteFunction or not remoteFunction:IsA("RemoteFunction") then
+		error(`RemoteFunction: {remoteName} does not exist`)
+	end
+
+	if RunService:IsClient() then
+		remoteFunction.OnClientInvoke = callback
+		return
+	elseif RunService:IsServer() then
+		remoteFunction.OnServerInvoke = callback
+		return
+	end
+
+	error("This function can only be used on the client or server.")
+end
+
 return Module

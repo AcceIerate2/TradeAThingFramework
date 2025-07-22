@@ -4,6 +4,8 @@ local RunService = game:GetService("RunService")
 local countdowns = require(script.countdowns)
 local getPlayerBase = require(ReplicatedStorage.Shared.Gameplay.Utility.getPlayerBase)
 local AnchorHandler = require(ReplicatedStorage.Shared.Utility.AnchorHandler)
+local CollisionHandler = require(ReplicatedStorage.Shared.Utility.CollisionHandler)
+local InstanceCreator = require(ReplicatedStorage.Shared.Utility.InstanceCreator)
 local JSONHandler = require(ReplicatedStorage.Shared.Utility.JSONHandler)
 local TypeCheck = require(ReplicatedStorage.Shared.Utility.TypeCheck)
 local stringToVector3 = require(ReplicatedStorage.Shared.Utility.stringToVector3)
@@ -69,7 +71,18 @@ function Module.placeBooster(player: Player, boosterName: string, position: Vect
 	newBooster:PivotTo(CFrame.new(position))
 	newBooster.Parent = getPlayerBase(player):FindFirstChild("placedBoosters")
 
-	local boosterType = newBooster:GetAttribute("Type") :: string
+	local radiusSize = newBooster:GetAttribute("Radius")
+
+	local boosterHitbox = InstanceCreator("Part", "Hitbox", newBooster) :: Part
+	CollisionHandler.SetInstanceOrGroup(boosterHitbox, "Characters")
+	CollisionHandler.ToggleCanCollide(boosterHitbox, false)
+	boosterHitbox.CanQuery = false
+	boosterHitbox.Anchored = true
+	boosterHitbox.Size = Vector3.new(radiusSize, 1, radiusSize)
+	boosterHitbox.CastShadow = false
+	boosterHitbox.Transparency = 0.25
+	boosterHitbox.PivotOffset = CFrame.new(0, -(boosterHitbox.Size.Y / 2), 0)
+	boosterHitbox:PivotTo(CFrame.new(position))
 
 	local elapsed = 0
 	countdowns[`{boosterName}_{id}`] = RunService.Heartbeat:Connect(function(deltaTime)
@@ -99,7 +112,6 @@ function Module.placeBooster(player: Player, boosterName: string, position: Vect
 	end)
 end
 
--- Work in progress
 function Module.load(player: Player)
 	local placedBoosters = player:FindFirstChild("placedBoosters") or player:WaitForChild("placedBoosters", 3)
 	if not placedBoosters then

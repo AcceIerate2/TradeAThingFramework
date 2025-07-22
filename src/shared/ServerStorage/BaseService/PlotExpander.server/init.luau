@@ -7,7 +7,7 @@ local eventListener = require(ReplicatedStorage.Shared.Utility.eventListener)
 local Module = {}
 
 function Module.listenToClients()
-	eventListener.listenToRemoteEvent("expandPlot", function(player: Player, landIdentifier: string)
+	eventListener.listenToRemoteFunction("expandPlot", function(player: Player, landIdentifier: string)
 		if not player then
 			return
 		end
@@ -52,6 +52,9 @@ function Module.listenToClients()
 		land:SetAttribute("CFrame", land:GetPivot())
 		task.wait()
 		land:PivotTo(CFrame.new(land:GetPivot().X, -100, land:GetPivot().Z))
+
+		print("what")
+		return true
 	end)
 end
 

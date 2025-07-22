@@ -2,6 +2,32 @@ local hitbox = require(script.hitbox) :: Part
 
 local Players = game:GetService("Players")
 
+local function checkIfSkippable(otherPart: BasePart): boolean
+	if not otherPart then
+		return false
+	end
+
+	local parent = otherPart.Parent
+	local isBoostser = parent:HasTag("Booster") :: boolean
+
+	if not isBoostser then
+		local objectToPlace = otherPart:FindFirstChildOfClass("Model")
+		if objectToPlace then
+			local Humanoid = objectToPlace:FindFirstChildOfClass("Humanoid")
+			if Humanoid then
+				return false
+			elseif not Humanoid then
+				local isPlacedCharacter = parent.Parent
+				if isPlacedCharacter.Name ~= "placedCharacters" then
+					return false
+				end
+			end
+		end
+	end
+
+	return true
+end
+
 local function getPlayerCharacters(): { Model }
 	local tableToReturn = {} :: { Model }
 	for _index: number, player in pairs(Players:GetPlayers()) do
@@ -30,7 +56,9 @@ local function isXZInside(base_PLATE: BasePart): boolean
 	return (hitboxMinX >= baseMinX and hitboxMaxX <= baseMaxX) and (hitboxMinZ >= baseMinZ and hitboxMaxZ <= baseMaxZ)
 end
 
-return function(mouse: Mouse, base_PLATE)
+local Module = {}
+
+function Module.update(mouse: Mouse, base_PLATE, objectToPlace: Model)
 	local mouseX, mouseY = mouse.X, mouse.Y
 	local unitRay = workspace.CurrentCamera:ScreenPointToRay(mouseX, mouseY)
 
@@ -40,18 +68,19 @@ return function(mouse: Mouse, base_PLATE)
 	raycastParams.FilterDescendantsInstances = { getPlayerCharacters(), hitbox }
 
 	local raycastResult = workspace:Raycast(unitRay.Origin, unitRay.Direction * 100, raycastParams)
-	if not raycastResult or raycastResult.Instance ~= base_PLATE then
+	if not raycastResult or raycastResult.Instance ~= base_PLATE and not checkIfSkippable(raycastResult.Instance) then
 		return
 	end
 
 	local hitPos = raycastResult.Position
 	local yPos = base_PLATE.Position.Y + base_PLATE.Size.Y / 2 + hitbox.Size.Y / 2
 	hitbox.Position = Vector3.new(hitPos.X, yPos, hitPos.Z)
+	objectToPlace:PivotTo(hitbox.CFrame)
 
 	local blocked = false
 	local partsInHitbox = workspace:GetPartsInPart(hitbox)
 	for _index: number, otherPart in pairs(partsInHitbox) do
-		if otherPart == base_PLATE then
+		if otherPart == base_PLATE or checkIfSkippable(otherPart) then
 			continue
 		end
 		blocked = true
@@ -68,3 +97,5 @@ return function(mouse: Mouse, base_PLATE)
 		hitbox.Color = Color3.fromRGB(0, 255, 0)
 	end
 end
+
+return Module

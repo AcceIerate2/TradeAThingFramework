@@ -14,13 +14,43 @@ local ToolFolder = ReplicatedStorage.Tools
 
 local Module = {}
 
+function Module.getBoosts(character: Model): (number, number)
+	local speedMultiplier = 1
+	local cashMultiplier = 1
+
+	local cashCollector = character:FindFirstChild("cashCollector")
+	if not cashCollector then
+		return speedMultiplier, cashMultiplier
+	end
+
+	local partsInHitbox = workspace:GetPartsInPart(cashCollector)
+	for _index: number, otherPart: BasePart in pairs(partsInHitbox) do
+		local parent = otherPart.Parent
+		local isBooster = parent:HasTag("Booster")
+		if isBooster then
+			local boostType = parent:GetAttribute("BoostType")
+			local multiplier = parent:GetAttribute("Multiplier")
+			if boostType == "Cash" then
+				cashMultiplier += multiplier
+			elseif boostType == "Speed" then
+				speedMultiplier += multiplier
+			end
+		end
+	end
+	return speedMultiplier, cashMultiplier
+end
+
 function Module.generateIncome(character: Model, owner: Player)
 	local CashPerSecond = character:GetAttribute("CashPerSecond")
 	task.spawn(function()
 		character:SetAttribute("CashGenerated", 0)
 		while character and owner do
-			character:SetAttribute("CashGenerated", character:GetAttribute("CashGenerated") + CashPerSecond)
-			task.wait(1)
+			local speedMultiplier, cashMultiplier = Module.getBoosts(character)
+			character:SetAttribute(
+				"CashGenerated",
+				character:GetAttribute("CashGenerated") + (CashPerSecond * cashMultiplier)
+			)
+			task.wait((1 / speedMultiplier))
 		end
 	end)
 end
@@ -128,8 +158,8 @@ function Module.placeCharacter(placedCharacterName: string, position: Vector3, b
 
 	local baseOwner = base.Owner.Value
 
-	Module.generateIncome(clonedCharacter, baseOwner)
 	Module.setHitbox(clonedCharacter, baseOwner)
+	Module.generateIncome(clonedCharacter, baseOwner)
 	Module.setupCharacter(baseOwner, clonedCharacter)
 end
 

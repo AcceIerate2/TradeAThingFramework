@@ -11,7 +11,7 @@ local eventListener = require(ReplicatedStorage.Shared.Utility.eventListener)
 local Module = {}
 
 function Module.listenToClients()
-	eventListener.listenToRemoteEvent("placeItem", function(player: Player, toolName: string, position: Vector3)
+	eventListener.listenToRemoteFunction("placeItem", function(player: Player, toolName: string, position: Vector3)
 		local validString = TypeCheck.string(toolName)
 		if not validString then
 			return
@@ -47,6 +47,8 @@ function Module.listenToClients()
 		elseif toolType == "Booster" then
 			BoosterService.placeBooster(player, toolName, position)
 		end
+
+		return true, nil, nil
 	end)
 end
 
